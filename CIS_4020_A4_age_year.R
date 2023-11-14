@@ -26,8 +26,8 @@ library(ggplot2)
 
 
 # subject to change based off final implementation
-amr_data_file <- "C:\\Users\\Justin\\Desktop\\School\\CIS4020\\R Scripts\\AMR_Data\\AMR Data.parquet"
-drug_tiers_data_file <-"C:\\Users\\Justin\\Desktop\\School\\CIS4020\\R Scripts\\AMR_Data\\Drug Tiers.csv"
+amr_data_file <- "./AMR Data.parquet"
+drug_tiers_data_file <-"./Drug Tiers.csv"
 
 
 # Read the Parquet file
