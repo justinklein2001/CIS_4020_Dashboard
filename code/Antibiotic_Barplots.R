@@ -1,8 +1,10 @@
 
 remove(list = ls())
+dev.off()
 
 library(arrow)
 library(readr)
+library(dplyr)
 library(ggplot2)
 
 amr_data_file <- "./data/AMR Data.parquet"
@@ -33,7 +35,7 @@ sub_level <- colSums(reduced_model == "S")
 res_level <- colSums(reduced_model == "R" | reduced_model == "I")
 
 valid_test <- sub_level + res_level
-valid_test <- valid_test[valid_test >= 50]
+valid_test <- valid_test[valid_test >= 500]
 print(valid_test)
 
 sub_level <- sub_level[names(valid_test)]
@@ -51,18 +53,35 @@ colnames(res_prob) <- 'resisted'
 #another way of sorting for data frames
 #res_prob <- arrange(res_prob, resisted)
 
-bacteria <- reorder(rownames(res_prob), res_prob$resisted)
-
 res_ascending <- ggplot(res_prob, aes(x=reorder(rownames(res_prob), resisted), 
                                       y=resisted)) + geom_bar(stat = "identity")
 
 res_ascending + ggtitle("Resistance Percentage by Antibiotic") +
-  xlab("Antibiotic Type") + ylab("Bacteria Resisted %")
-
-res_prob <- arrange(res_prob, desc(resisted))
+  xlab("Antibiotic Type") + ylab("Bacteria Resisted %") + ylim(0, 100)
 
 res_descending <- ggplot(res_prob, aes(x=reorder(rownames(res_prob), -resisted), 
                                        y=resisted)) + geom_bar(stat = "identity")
 
 res_descending + ggtitle("Resistance Percentage by Antibiotic") +
-  xlab("Antibiotic Type") + ylab("Bacteria Resisted %")
+  xlab("Antibiotic Type") + ylab("Bacteria Resisted %") + ylim(0, 100)
+
+#sort from most to least
+sub_prob <- sub_prob[order(sub_prob)]
+
+sub_prob <- as.data.frame(sub_prob)
+colnames(sub_prob) <- 'subsceptible'
+
+#another way of sorting for data frames
+#res_prob <- arrange(res_prob, resisted)
+
+sub_ascending <- ggplot(sub_prob, aes(x=reorder(rownames(sub_prob), subsceptible), 
+                                      y=subsceptible)) + geom_bar(stat = "identity")
+
+sub_ascending + ggtitle("Subsceptibility Percentage by Antibiotic") +
+  xlab("Antibiotic Type") + ylab("Bacteria Subsceptibility %") + ylim(0, 100)
+
+sub_descending <- ggplot(sub_prob, aes(x=reorder(rownames(sub_prob), -subsceptible), 
+                                      y=subsceptible)) + geom_bar(stat = "identity")
+
+sub_descending + ggtitle("Subsceptibility Percentage by Antibiotic") +
+  xlab("Antibiotic Type") + ylab("Bacteria Subsceptibility %") + ylim(0, 100)
