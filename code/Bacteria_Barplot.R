@@ -38,22 +38,4 @@ bac_sub_level <- rowSums(temp == "S")
 bac_anti$bac_sub <- bac_sub_level
 print(bac_anti)
 
-#TO BE DONE BELOW
-
-bac_anti <- rowsum(bac_anti, group = colnames(bac_anti), na.rm = T)
-
-sub_level <- colSums(bac_anti == "S")
-res_level <- colSums(bac_anti == "R" | bac_anti == "I")
-
-valid_test <- sub_level + res_level
-valid_test <- valid_test[valid_test >= 500]
-print(valid_test)
-
-dat <- data.frame(
-  value = runif(100),
-  group = sample(1:20, 100, replace = T)
-)
-print(dat)
-rowsum(dat$value, dat$group)
-
       
