@@ -1,5 +1,6 @@
 
 remove(list = ls())
+gc()
 
 if (length(dev.list()) != 0){
   dev.off()
@@ -22,6 +23,7 @@ bac_anti <- c("org_standard", antibiotics)
 
 bac_anti <- parquet_file[, bac_anti]
 # Find columns with all "NA" values
+bac_anti[bac_anti == "TF" | bac_anti == "N/I"] <- NA
 na_only_columns <- colSums(is.na(bac_anti)) == nrow(bac_anti)
 
 bac_anti <- bac_anti[, !na_only_columns, drop = FALSE]
@@ -29,7 +31,6 @@ bac_anti <- bac_anti[!is.na(bac_anti$org_standard), ]
 bac_anti[is.na(bac_anti)] <- "NA"
 
 num_bacteria = n_distinct(bac_anti$org_standard)
-print(num_bacteria)
 
 temp <- bac_anti[,!(names(bac_anti) == "org_standard")]
 
@@ -90,14 +91,39 @@ for (i in colnames(bac_anti)){
   
 }
 
-sub_collection$bac_sub <- rowSums(sub_collection[,names(sub_collection) != "org_standard"])
-res_collection$bac_sub <- rowSums(res_collection[,names(res_collection) != "org_standard"])
-total_collection$bac_sub <- rowSums(total_collection[,names(total_collection) != "org_standard"])
+sub_collection$bac_sum <- rowSums(sub_collection[,names(sub_collection) != "org_standard"])
+res_collection$bac_sum <- rowSums(res_collection[,names(res_collection) != "org_standard"])
+total_collection$bac_sum <- rowSums(total_collection[,names(total_collection) != "org_standard"])
 
-print(total_collection)
+res_collection$prob <- (res_collection$bac_sum / total_collection$bac_sum) * 100
 
-print(sub_collection$bac_sub + res_collection$bac_sub)
-print(total_collection$bac_sub)
+res_ascending <- ggplot(res_collection, aes(x=reorder(org_standard, prob), 
+                                      y=prob)) + geom_bar(stat = "identity")
+
+res_ascending + ggtitle("Resistance Percentage by Bacteria") +
+  xlab("Bacteria Type") + ylab("Antibiotics Resisted %") + ylim(0, 100)
+
+res_descending <- ggplot(res_collection, aes(x=reorder(org_standard, -prob), 
+                                            y=prob)) + geom_bar(stat = "identity")
+
+res_descending + ggtitle("Resistance Percentage by Bacteria") +
+  xlab("Bacteria Type") + ylab("Antibiotics Resisted %") + ylim(0, 100)
+
+
+
+sub_collection$prob <- (sub_collection$bac_sum / total_collection$bac_sum) * 100
+
+sub_ascending <- ggplot(sub_collection, aes(x=reorder(org_standard, prob), 
+                                            y=prob)) + geom_bar(stat = "identity")
+
+sub_ascending + ggtitle("Subseceptibility Percentage by Bacteria") +
+  xlab("Bacteria Type") + ylab("Antibiotics Resisted %") + ylim(0, 100)
+
+sub_descending <- ggplot(sub_collection, aes(x=reorder(org_standard, -prob), 
+                                             y=prob)) + geom_bar(stat = "identity")
+
+sub_descending + ggtitle("Subseceptibility Percentage by Bacteria") +
+  xlab("Bacteria Type") + ylab("Antibiotics Resisted %") + ylim(0, 100)
 
 
       
