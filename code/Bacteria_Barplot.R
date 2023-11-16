@@ -178,27 +178,35 @@ best_antibiotics <- function(bacteria, probs){
   if (sum(rownames(probs) == bacteria) == 0) {
     print(sprintf("Bacteria '%s' is not in this list.", bacteria))
   }
-  best_options <- apply(probs[bacteria,],1,function(x) which(x==max(x)))
-  best_options <- colnames(probs)[best_options]
+
+  best_options <- t(probs[bacteria,])
+  colnames(best_options) <- "bacteria"
+  best_options <- best_options[order(best_options, decreasing = TRUE), ,drop = FALSE]
   
-  count <- 0
-  for (i in best_options){
-    if (count >= 3) break
-    if (probs[bacteria, i] == 0) break
-    print(sprintf("Antibiotic #%d: %s, Recorded Probability: %f%%", count + 1, i, probs[bacteria, i]))
-    drugs <- i == drug_tiers
+  best_labels <- rownames(best_options)
+  
+  best_options <- best_options[1:3]
+  best_labels <- best_labels[1:3]
+  
+  if (best_options[1] == 0){
+    print(sprintf("No recorded information for bacteria '%s' on this species.", bacteria))
+    return()
+  }
+  
+  for (i in 1:3){
+    print(sprintf("Antibiotic #%d: %s, Recorded Probability: %f%%", i, best_labels[i], best_options[i]))
+    drugs <- best_labels[i] == drug_tiers
     for (j in 1:nrow(drugs)){
       if (drugs[j,1]){
         print(sprintf("Drug Tier: %d", as.numeric(drug_tiers[j,2])))
       }
     }
-    count <- count + 1
   }
-  if (count == 0){
-    print(sprintf("No recorded information for bacteria '%s' on this species.", bacteria))
-  }
+
+  
+  
 }
 print(rownames(dog_probs))
-best_antibiotics("PSEUDOMONAS LUTEOLA", dog_probs)
+best_antibiotics("KLEBSIELLA SP", dog_probs)
 
       
