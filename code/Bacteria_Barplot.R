@@ -202,9 +202,6 @@ best_antibiotics <- function(bacteria, probs){
       }
     }
   }
-
-  
-  
 }
 print(rownames(dog_probs))
 best_antibiotics("KLEBSIELLA SP", dog_probs)
