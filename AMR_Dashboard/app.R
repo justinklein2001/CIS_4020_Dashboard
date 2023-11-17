@@ -37,7 +37,7 @@ ui <- fluidPage(
         ),
 
         # Show a plot of the generated distribution
-        mainPanel()
+        mainPanel(plotOutput("num_tests"))
     )
 )
 
@@ -48,6 +48,25 @@ server <- function(input, output) {
   
   # Read in the AMR data file into memory
   amr_data_file_mem <- arrow::read_parquet(amr_data_file)
+  
+  # store counts of each type of year in a table
+  test_counts <- table(amr_data_file_mem[["order_month"]])
+  
+  months_count_df <- data.frame(value = as.numeric(names(test_counts)), count = as.numeric(test_counts))
+  
+  ###############################
+  # DISPLAY TESTS ################
+  output$num_tests <- renderPlot({
+    # plot that baby
+    ggplot(months_count_df, aes(x = value, y = count)) +
+      geom_line() +
+      geom_point() +
+      labs("Number of Tests Per Month",
+           x = "Months",
+           y = "Number of Tests",
+           title = "Number of AMR Tests per Month") +
+      scale_x_continuous(breaks = 1:12)
+  })
   
   # Get all the antibiotics)
   required_variables <- colnames(amr_data_file_mem)[(ncol(amr_data_file_mem) - 56):ncol(amr_data_file_mem)]
