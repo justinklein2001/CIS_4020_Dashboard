@@ -64,26 +64,46 @@ colnames(sub_prob) <- 'chance'
 ui <- fluidPage(
   
   # Application title
-  titlePanel("Dashboard"),
+  title = "Dashboard",
   
   # Sidebar with a slider input for number of bins 
-  sidebarLayout(
-    sidebarPanel(
-      sliderInput("bins",
-                  "# of Antibiotics:",
-                  min = 5,
-                  max = nrow(res_prob) - 1,
-                  value = 20,
-                  step = 2),
-      
-      actionButton("swapplot", "Subsceptibility"),
-      actionButton("sorting", "Ascending")
+  fluidRow(
+    column(width = 4, offset = 0, align = "left",
+           style = "background-color:#d3d3d3;border: 3px solid #000000;",
+           plotOutput("antiPlot")
     ),
-    
-    # Show a plot of the generated distribution
-    mainPanel(
-      plotOutput("antiPlot")
-    )
+  ),  
+  fluidRow(
+    column(width = 3, offset = 0, align = "center", 
+           style = "background-color:#d3d3d3;border: 3px solid #000000;",
+           #plotOutput("antiPlot"),
+           sliderInput("bins",
+                       "# of Antibiotics:",
+                       min = 5,
+                       max = nrow(res_prob) - 1,
+                       value = 20,
+                       step = 1,
+                       width = "75%"),
+    ),
+    column(width = 1, offset = 0,
+           style = "background-color:#d3d3d3;border: 3px solid #000000;height: 105.5px;",
+           align = "center",
+           actionButton(
+             "swapplot", 
+             "Subsceptibility",
+             style='padding:4px; font-size:80%; margin-top: 27%;'
+           ),
+           actionButton(
+             "sorting", 
+             "Ascending",
+             style='padding:4px; font-size:80%;'
+           )
+    ),
+  
+  # Show a plot of the generated distribution
+  #mainPanel(
+    #plotOutput("antiPlot")
+  #)
   )
 )
 
@@ -138,7 +158,7 @@ server <- function(input, output, session) {
     
     if (params$res){
       plot + ggtitle("Resistance Percentage by Antibiotic") +
-        xlab("Antibiotic Type") + ylab("Bacteria Resisted %") + ylim(0, 100)
+        xlab("Antibiotic Type") + ylab("Bacteria Resistance %") + ylim(0, 100)
     }
     else{
       plot + ggtitle("Subsceptibility Percentage by Antibiotic") +
