@@ -121,6 +121,7 @@ res_collection$bac_sum <- rowSums(res_collection[,!names(res_collection) %in% c(
 total_collection$bac_sum <- rowSums(total_collection[,!names(total_collection) %in% c("org_standard", "species")])
 
 res_collection$prob <- (res_collection$bac_sum / total_collection$bac_sum) * 100
+sub_collection$prob <- (sub_collection$bac_sum / total_collection$bac_sum) * 100
 
 res_ascending <- ggplot(res_collection, aes(x=reorder(org_standard, prob), 
                                       y=prob)) + geom_bar(stat = "identity")
@@ -135,8 +136,6 @@ res_descending + ggtitle("Resistance Percentage by Bacteria") +
   xlab("Bacteria Type") + ylab("Antibiotics Resisted %") + ylim(0, 100)
 
 
-
-sub_collection$prob <- (sub_collection$bac_sum / total_collection$bac_sum) * 100
 
 sub_ascending <- ggplot(sub_collection, aes(x=reorder(org_standard, prob), 
                                             y=prob)) + geom_bar(stat = "identity")
@@ -203,7 +202,7 @@ best_antibiotics <- function(bacteria, probs){
     }
   }
 }
-print(rownames(dog_probs))
+
 best_antibiotics("KLEBSIELLA SP", dog_probs)
 
       
