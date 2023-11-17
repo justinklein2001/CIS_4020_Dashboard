@@ -15,103 +15,102 @@ remove(list=ls())
 #install.packages("tidyr")
 #install.packages("caret")
 #install.packages("ggplot2")
+#install.packages("broom")
 
-library(nnet)   # package needed for multinomial logistic regression
-library(arrow)  # package needed to work with Parquet files
+library(nnet)   
+library(arrow)  
 library(dplyr)
 library(tidyr)
 library(caret)
 library(ggplot2)
+library(broom)
 
-
-
-# subject to change based off final implementation
 amr_data_file <- "./data/AMR Data.parquet"
-drug_tiers_data_file <-"./data/Drug Tiers.csv"
 
+# Read in the AMR data file into memory
+amr_data_file_mem <- arrow::read_parquet(amr_data_file)
 
-# Read the Parquet file
-parquet_file <- arrow::read_parquet(amr_data_file)
+# Get all the antibiotics)
+required_variables <- colnames(amr_data_file_mem)[(ncol(amr_data_file_mem) - 56):ncol(amr_data_file_mem)]
 
+# append the variable we are predicting to the data set
+required_variables <- c("age_year", required_variables)
 
-# Define the predictor variables (last 57 columns)
-predictor_variables <- colnames(parquet_file)[(ncol(parquet_file) - 56):ncol(parquet_file)]
-predictor_variables <- c("age_year", predictor_variables)
-#print(predictor_variables)
+# Create a data frame to be used for modeling
+model_data <- as.data.frame(amr_data_file_mem)
 
+# Only grab the required variables from the dataset
+reduced_model <- model_data[, required_variables]
 
-# Create a data frame for modeling
-model_data <- as.data.frame(parquet_file)
-
-
-
-reduced_model <- model_data[, predictor_variables]
-# Find columns with all "NA" values
+# Find all columns with NA values, need to remove them
 na_only_columns <- colSums(is.na(reduced_model)) == nrow(reduced_model)
-#print(na_only_columns)
-# Remove those columns
+
+# Remove the NA columns
 reduced_model <- reduced_model[, !na_only_columns, drop = FALSE]
+
+# Remove any entry that has an NA age_year entry, useless for this model
 reduced_model <- reduced_model[!is.na(reduced_model$age_year), ]
+
+# hacky solution, replace any leftover NA entries with a string so that the
+# model can be computed, will be filtered out later
 reduced_model[is.na(reduced_model)] <- "NA"
 
+# start looping though the variables for pre-processing
 for (col in names(reduced_model)) {
+  
+  # antibiotic columns
   if (col != "age_year"){
+    
+    # convert Antibioitc to factor to work with linear regression
     reduced_model[[col]] <- factor(reduced_model[[col]], levels = c("I", "R", "S", "N/I", "NA"))
-    #print(levels(reduced_model[[col]]))
+  
+  # age year col
   } else {
+    
+    # go through all the age_year entries
     for (i in 1:(length(reduced_model[[col]]))){
+      
+      # get rid of the string representation of less than a year
       if (reduced_model[[col]][i] == "< 1 year"){
+        
         reduced_model[[col]][i] <- as.integer(0.5)
+      
       } else {
+        
         reduced_model[[col]][i] = as.integer(reduced_model[[col]][i])
+      
       }
     }
-    
-    #print(levels(reduced_model[[col]]))
-  }
-}
-print(reduced_model$age_year)
-print(levels(reduced_model$age_year))
-
-
-# Check and filter columns with less than two levels
-valid_columns <- character(0)
-for (col in names(reduced_model)) {
-  if (col == "age_year" || length(levels(reduced_model[[col]]) >= 2)) {
-    valid_columns <- c(valid_columns, col)
-  } else {
-    cat("Column with insufficient levels:", col, "\n")
-    cat("Levels:", levels(reduced_model[[col]]), "\n\n")
   }
 }
 
-# Create a subset of the dataset with valid columns
-#reduced_model <- reduced_model[, c("age_year", valid_columns)]
+# final check for na before building model (overkill ik)
 reduced_model <- na.omit(reduced_model)
-#print(reduced_model)
 
-# Fit the logistic regression model
+
+# The linear regression model
 model <- lm(age_year ~ ., data = reduced_model)
-print(summary(model))
 
-observed_values <- reduced_model$age_year
-predicted_values <- predict(model)
+# Tidy up the model coefficients
+tidy_data <- tidy(model)
 
-#print(max(na.omit(observed_values))+1)
+# Filter out useless coefficients
+tidy_data <- filter(tidy_data, p.value < 0.05, estimate > 0)
 
-# Create a sequence for the x-axis (e.g., 1, 2, 3, ...)
-x <- seq_along(observed_values)
+# this is where we actually filter out those hardcoded NA entries
+tidy_data <- tidy_data %>%
+  filter(!grepl("NA", term))
 
-# Calculate the y-axis limit based on the range of numeric values in observed_values
-y_max <- as.integer(max(na.omit(observed_values))) + 1
-
-# Create a line graph
-plot(x, observed_values, type = "o", col = "blue", pch = 16, ylim = c(0, y_max),
-     xlab = "Test", ylab = "Age (years)", main = "Line Graph with Linear Regression Line")
-
-# Add the regression line
-lines(x, predicted_values, col = "red")
-legend("topleft", legend = c("Observed", "Regression Line"), col = c("blue", "red"), lty = 1)
+print(tidy_data)
+# Create a plot using ggplot2
+ggplot(tidy_data, aes(x = term, y = estimate)) +
+  geom_point(aes(color = p.value < 0.05)) +  # Highlight significant coefficients
+  geom_errorbar(aes(ymin = estimate - std.error, ymax = estimate + std.error), width = 0.2) +  # Confidence intervals
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + # set the reference line to 0
+  labs(title = "Linear Regression Coefficients",
+       x = "Antibiotic Susceptibility",
+       y = "Predicted Age") +
+  theme_minimal()
 
 
 
