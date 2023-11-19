@@ -19,6 +19,10 @@ library(arrow)
 library(readr)
 library(dplyr)
 library(ggplot2)
+library(nnet)   
+library(tidyr)
+library(caret)
+library(broom)
 
 amr_data_file <- "./data/AMR Data.parquet"
 drug_tiers_data_file <- "./data/Drug Tiers.csv"
@@ -26,7 +30,94 @@ drug_tiers_data_file <- "./data/Drug Tiers.csv"
 drug_tiers <- read_csv(drug_tiers_data_file)
 
 parquet_file <- arrow::read_parquet(amr_data_file)
-print(unique(parquet_file$R1))
+
+####################
+
+## JUSTIN START HERE
+# store counts of each type of year in a table
+test_counts <- table(parquet_file[["order_month"]])
+
+# make counts a df
+months_count_df <- data.frame(value = as.numeric(names(test_counts)), count = as.numeric(test_counts))
+
+# Get all the antibiotics)
+required_variables <- colnames(parquet_file)[(ncol(parquet_file) - 56):ncol(parquet_file)]
+
+# append the variable we are predicting to the data set
+required_variables <- c("age_year", required_variables)
+
+# Create a data frame to be used for modeling
+model_data <- as.data.frame(parquet_file)
+
+# Only grab the required variables from the dataset
+reduced_model <- model_data[, required_variables]
+
+# Find all columns with NA values, need to remove them
+na_only_columns <- colSums(is.na(reduced_model)) == nrow(reduced_model)
+
+# Remove the NA columns
+reduced_model <- reduced_model[, !na_only_columns, drop = FALSE]
+
+# Remove any entry that has an NA age_year entry, useless for this model
+reduced_model <- reduced_model[!is.na(reduced_model$age_year), ]
+
+# hacky solution, replace any leftover NA entries with a string so that the
+# model can be computed, will be filtered out later
+reduced_model[is.na(reduced_model)] <- "NA"
+
+# start looping though the variables for pre-processing
+for (col in names(reduced_model)) {
+  
+  # antibiotic columns
+  if (col != "age_year"){
+    
+    # convert Antibioitc to factor to work with linear regression
+    reduced_model[[col]] <- factor(reduced_model[[col]], levels = c("I", "R", "S", "N/I", "NA"))
+    
+    # age year col
+  } else {
+    
+    # go through all the age_year entries
+    for (i in 1:(length(reduced_model[[col]]))){
+      
+      # get rid of the string representation of less than a year
+      if (reduced_model[[col]][i] == "< 1 year"){
+        
+        reduced_model[[col]][i] <- as.integer(0.5)
+        
+      } else {
+        
+        reduced_model[[col]][i] = as.integer(reduced_model[[col]][i])
+        
+      }
+    }
+  }
+}
+
+# final check for na before building model (overkill ik)
+reduced_model <- na.omit(reduced_model)
+
+
+# The linear regression model
+model <- lm(age_year ~ ., data = reduced_model)
+
+# Tidy up the model coefficients
+tidy_data <- tidy(model)
+
+# Filter out useless coefficients
+tidy_data <- filter(tidy_data, p.value < 0.05, estimate > 0)
+
+# this is where we actually filter out those hardcoded NA entries
+tidy_data <- tidy_data %>%
+  filter(!grepl("NA", term))
+
+# filter out the N/I as well
+tidy_data <- tidy_data %>%
+  filter(!grepl("N/I", term))
+
+
+## JUSTIN END HERE
+#################
 
 # Define the predictor variables (last 57 columns)
 antibiotics <- colnames(parquet_file)[(ncol(parquet_file) - 56):ncol(parquet_file)]
@@ -225,7 +316,7 @@ cat(best_antibiotics("E COLI", "Canine"))
 ui <- fluidPage(
   
   # Application title
-  title = "Dashboard",
+  titlePanel("Group Burnout AMR Dashboard"),
   
   # Sidebar with a slider input for number of bins 
   fluidRow(
@@ -325,6 +416,19 @@ ui <- fluidPage(
   ),
   fluidRow(align = "center", style = "background-color:#d3d3d3;",
     verbatimTextOutput("best_antibiotics"),
+  ),
+  fluidRow(align = "center", style = "background-color:#d3d3d3;border: 3px solid #000000;",
+           column(width = 8, align = "center",
+                  plotOutput("num_tests"),
+           ),
+           column(width = 4, align = "center",
+                sliderInput("given_age",
+                            "What is the age of your companion patient?",
+                            min = 1,
+                            max = 9,
+                            value = 6),
+                htmlOutput("ageTextContainer"),
+           )
   ),
 )
 
@@ -460,7 +564,68 @@ server <- function(input, output, session) {
   output$best_antibiotics <- renderText({
     if (input$search != "") best_antibiotics(input$search, input$species)
   })
-
+  
+  ## JUSTIN STUFF HERE
+  
+  # only grab date of the asked for age
+  filter_data <- reactive({
+    filtered_data <- tidy_data[
+      input$given_age >= tidy_data$estimate - tidy_data$std.error &
+        input$given_age <= tidy_data$estimate + tidy_data$std.error, ]
+    return(filtered_data)
+  })
+  
+  ###############################
+  # DISPLAY AGE ################
+  output$ageText <- renderText({
+    
+    # get all matched rows
+    matched_rows = filter_data()
+    
+    # only print it if something was found
+    if (nrow(matched_rows) > 0) {
+      # get the lowest p-value scored
+      min_p_value_index <- which.min(matched_rows$p.value)
+      matched_row <- matched_rows[min_p_value_index, , drop = FALSE]
+      
+      # Split the "term" value at index 2
+      term_parts <- unlist(strsplit(as.character(matched_row$term), ""))
+      # Construct the message
+      antibiotic_result <- ""
+      if (term_parts[3] == "R") {
+        antibiotic_result <- "resistant"
+      } else if (term_parts[3] == "S"){
+        antibiotic_result <- "susceptible"
+      } else {
+        antibiotic_result <- "UPDATE"
+      }
+      output_text <- paste0(term_parts[1], term_parts[2], " can be found to be a ", antibiotic_result," antibiotic for companions of age ",input$given_age, sep = "\n")
+      return(HTML(paste(output_text, collapse = "<br>"))) 
+    }
+    return(HTML(paste("No useful found for this age!", collapse = "<br>")))
+  })
+  
+  output$ageTextContainer <- renderUI({
+    tags$div(
+      style = "padding: 10px; border: 1px solid #ccc;",
+      textOutput("ageText")
+    )
+  })
+  
+  ###############################
+  # DISPLAY TESTS ################
+  output$num_tests <- renderPlot({
+    # plot that baby
+    ggplot(months_count_df, aes(x = value, y = count)) +
+      geom_line() +
+      geom_point() +
+      labs("Number of Tests Per Month",
+           x = "Months",
+           y = "Number of Tests",
+           title = "Number of AMR Tests per Month") +
+      scale_x_continuous(breaks = 1:12)
+  })
+  ## JUSTIN END
 }
 
 # Run the application 
