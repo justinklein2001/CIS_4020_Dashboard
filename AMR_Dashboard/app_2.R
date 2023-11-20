@@ -311,6 +311,7 @@ best_antibiotics <- function(bacteria, species){
   text_return
 }
 cat(best_antibiotics("E COLI", "Canine"))
+print(dog_probs)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -346,7 +347,7 @@ ui <- fluidPage(
            align = "center",
            actionButton(
              "swapplot_anti", 
-             "Subsceptibility",
+             "Susceptibility",
              style='padding:4px; font-size:80%; margin-top: 15%;'
            ),
            actionButton(
@@ -371,7 +372,7 @@ ui <- fluidPage(
            align = "center",
            actionButton(
              "swapplot_bac", 
-             "Subsceptibility",
+             "Susceptibility",
              style='padding:4px; font-size:80%; margin-top: 15%;'
            ),
            actionButton(
@@ -392,7 +393,7 @@ ui <- fluidPage(
         inputId = "search", 
         label = "Best Antibiotics Search",
         multiple = FALSE,
-        choices = c("Best Antibiotics Search" = "", sort(total_collection$org_standard)),
+        choices = c("Best Antibiotics Search" = "", sort(rownames(cat_probs))),
         options = list(
           create = FALSE,
           placeholder = "Input Bacteria Here",
@@ -461,7 +462,7 @@ server <- function(input, output, session) {
     if (params_anti$res){
       params_anti$prob <- sub_prob
       params_anti$res <- FALSE
-      updateActionButton(session, "swapplot_anti", label = "Subsceptibility")
+      updateActionButton(session, "swapplot_anti", label = "Susceptibility")
     }
     else{
       params_anti$prob <- res_prob
@@ -495,8 +496,8 @@ server <- function(input, output, session) {
         xlab("Antibiotic Type") + ylab("Bacteria Resistance %") + ylim(0, 100)
     }
     else{
-      plot + ggtitle("Subsceptibility Percentage by Antibiotic") +
-        xlab("Antibiotic Type") + ylab("Bacteria Subsceptibility %") + ylim(0, 100)
+      plot + ggtitle("Susceptibility Percentage by Antibiotic") +
+        xlab("Antibiotic Type") + ylab("Bacteria Susceptibility %") + ylim(0, 100)
     }
   })
   
@@ -523,7 +524,7 @@ server <- function(input, output, session) {
     if (params_bac$res){
       params_bac$prob <- sub_collection
       params_bac$res <- FALSE
-      updateActionButton(session, "swapplot_bac", label = "Subsceptibility")
+      updateActionButton(session, "swapplot_bac", label = "Susceptibility")
     }
     else{
       params_bac$prob <- res_collection
@@ -557,8 +558,8 @@ server <- function(input, output, session) {
         xlab("Bacteria Type") + ylab("Bacteria Resistance %") + ylim(0, 100)
     }
     else{
-      plot + ggtitle("Subsceptibility Percentage by Bacteria") +
-        xlab("Bacteria Type") + ylab("Bacteria Subsceptibility %") + ylim(0, 100)
+      plot + ggtitle("Susceptibility Percentage by Bacteria") +
+        xlab("Bacteria Type") + ylab("Bacteria Susceptibility %") + ylim(0, 100)
     }
   })
   output$best_antibiotics <- renderText({
