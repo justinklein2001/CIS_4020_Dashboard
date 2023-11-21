@@ -411,7 +411,7 @@ ui <- dashboardPage(
                 box(width = 2, offset = 0, align = "center", height = 150, title = "Modify Graph:",
                        actionButton(
                          "swapplot_anti", 
-                         "Subsceptibility",
+                         "Susceptibility",
                          style='padding:4px; font-size:80%; margin-top: 15%; width: 80px;'
                        ),
                        actionButton(
@@ -433,7 +433,7 @@ ui <- dashboardPage(
                        align = "center", height = 150, title = "Modify Graph:",
                        actionButton(
                          "swapplot_bac", 
-                         "Subsceptibility",
+                         "Susceptibility",
                          style='padding:4px; font-size:80%; margin-top: 15%; width: 80px;'
                        ),
                        actionButton(
@@ -449,7 +449,7 @@ ui <- dashboardPage(
                          box(width = 4, align = "center", status = "primary",
                              "Based off data from the last 4 years, it looks like November has a low amount of AMR testing.",
                              box(
-                               title = "Current Saffing Needs:",
+                               title = "Current Staffing Needs:",
                                status = "primary",
                                solidHeader = TRUE,
                                collapsible = TRUE,
@@ -495,7 +495,7 @@ server <- function(input, output, session) {
     if (params_anti$res){
       params_anti$prob <- sub_prob
       params_anti$res <- FALSE
-      updateActionButton(session, "swapplot_anti", label = "Subsceptibility")
+      updateActionButton(session, "swapplot_anti", label = "Susceptibility")
     }
     else{
       params_anti$prob <- res_prob
@@ -529,8 +529,8 @@ server <- function(input, output, session) {
         xlab("Antibiotic Type") + ylab("Bacteria Resistance %") + ylim(0, 100)
     }
     else{
-      plot + ggtitle("Subsceptibility Percentage by Antibiotic") +
-        xlab("Antibiotic Type") + ylab("Bacteria Subsceptibility %") + ylim(0, 100)
+      plot + ggtitle("Susceptibility Percentage by Antibiotic") +
+        xlab("Antibiotic Type") + ylab("Bacteria Susceptibility %") + ylim(0, 100)
     }
   })
   
@@ -557,7 +557,7 @@ server <- function(input, output, session) {
     if (params_bac$res){
       params_bac$prob <- sub_collection
       params_bac$res <- FALSE
-      updateActionButton(session, "swapplot_bac", label = "Subsceptibility")
+      updateActionButton(session, "swapplot_bac", label = "Susceptibility")
     }
     else{
       params_bac$prob <- res_collection
@@ -591,8 +591,8 @@ server <- function(input, output, session) {
         xlab("Bacteria Type") + ylab("Bacteria Resistance %") + ylim(0, 100)
     }
     else{
-      plot + ggtitle("Subsceptibility Percentage by Bacteria") +
-        xlab("Bacteria Type") + ylab("Bacteria Subsceptibility %") + ylim(0, 100)
+      plot + ggtitle("Susceptibility Percentage by Bacteria") +
+        xlab("Bacteria Type") + ylab("Bacteria Susceptibility %") + ylim(0, 100)
     }
   })
   output$best_antibiotics <- renderText({

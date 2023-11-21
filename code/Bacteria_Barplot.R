@@ -120,6 +120,8 @@ sub_collection$bac_sum <- rowSums(sub_collection[,!names(sub_collection) %in% c(
 res_collection$bac_sum <- rowSums(res_collection[,!names(res_collection) %in% c("org_standard", "species")])
 total_collection$bac_sum <- rowSums(total_collection[,!names(total_collection) %in% c("org_standard", "species")])
 
+
+
 res_collection$prob <- (res_collection$bac_sum / total_collection$bac_sum) * 100
 sub_collection$prob <- (sub_collection$bac_sum / total_collection$bac_sum) * 100
 
@@ -204,5 +206,6 @@ best_antibiotics <- function(bacteria, probs){
 }
 
 best_antibiotics("KLEBSIELLA SP", dog_probs)
-
+print(total_collection)
+rownames(total_collection) <- total_collection$org_standard
       
