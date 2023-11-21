@@ -317,7 +317,7 @@ cat(best_antibiotics("E COLI", "Canine"))
 
 # Define UI
 ui <- dashboardPage(
-  dashboardHeader(title = "AMR Dashboard - Group Burnout"),
+  dashboardHeader(title = "AMR Dashboard"),
   dashboardSidebar(
     sidebarMenu(
       menuItem(" Home", tabName = "home", icon = icon("home")),
@@ -462,7 +462,7 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "about",
               fluidRow(
-                box("Content for the about tab", width = 12)
+                box("This dashboard aims to empower veterinarians to make empowered and data driven decisions on how to best treat their patients", width = 12)
               )
       )
     )
