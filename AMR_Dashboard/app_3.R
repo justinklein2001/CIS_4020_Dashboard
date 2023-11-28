@@ -278,12 +278,17 @@ dog_probs[dog_probs == Inf] <- 0
 rownames(cat_probs) <- total_collection$org_standard
 rownames(dog_probs) <- total_collection$org_standard
 
+rownames(total_dogs) <- total_collection$org_standard
+rownames(total_cats) <- total_collection$org_standard
+
 best_antibiotics <- function(bacteria, species){
   if (species == "Canine"){
     probs <- dog_probs
+    counts <- total_dogs
   }
   else{
     probs <- cat_probs
+    counts <- total_cats
   }
   if (sum(rownames(probs) == bacteria) == 0) {
     print(sprintf("Bacteria '%s' is not in this list.", bacteria))
@@ -297,6 +302,7 @@ best_antibiotics <- function(bacteria, species){
   
   best_options <- best_options[1:3]
   best_labels <- best_labels[1:3]
+  total_pets <- counts[bacteria, best_labels]
   
   if (best_options[1] == 0){
     return(sprintf("No recorded information for bacteria '%s' on this species.", bacteria))
@@ -304,6 +310,8 @@ best_antibiotics <- function(bacteria, species){
   text_return <- ""
   for (i in 1:3){
     text_return <- paste(text_return, sprintf("Antibiotic #%d: %s, Recorded Probability: %f%%", i, best_labels[i], best_options[i]), sep="\n")
+    text_return <- paste(text_return, sprintf("Total Tests Done: %d", counts[bacteria, best_labels[i]]), sep="\n")
+    
     drugs <- best_labels[i] == drug_tiers
     for (j in 1:nrow(drugs)){
       if (drugs[j,1]){
