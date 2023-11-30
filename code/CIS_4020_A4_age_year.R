@@ -90,7 +90,7 @@ reduced_model <- na.omit(reduced_model)
 
 # The linear regression model
 model <- lm(age_year ~ ., data = reduced_model)
-
+#print(model)
 # Tidy up the model coefficients
 tidy_data <- tidy(model)
 
@@ -101,7 +101,33 @@ tidy_data <- filter(tidy_data, p.value < 0.05, estimate > 0)
 tidy_data <- tidy_data %>%
   filter(!grepl("NA", term))
 
-print(tidy_data)
+print(reduced_model)
+new_data <- tidy_data
+
+predictions <- predict(model, newdata = reduced_model)
+
+# Assuming 'actual_values' is the actual values of the dependent variable
+actual_values <- reduced_model$age_year
+
+# Calculate residuals
+residuals <- actual_values - predictions
+
+# Print or analyze residuals
+print(residuals)
+
+# Assess model accuracy
+mse <- mean(residuals^2)
+rmse <- sqrt(mse)
+mae <- mean(abs(residuals))
+rsquared <- summary(model)$r.squared
+
+# Print or use accuracy metrics
+cat("Mean Squared Error:", mse, "\n")
+cat("Root Mean Squared Error:", rmse, "\n")
+cat("Mean Absolute Error:", mae, "\n")
+cat("R-squared:", rsquared, "\n")
+
+
 # Create a plot using ggplot2
 ggplot(tidy_data, aes(x = term, y = estimate)) +
   geom_point(aes(color = p.value < 0.05)) +  # Highlight significant coefficients
