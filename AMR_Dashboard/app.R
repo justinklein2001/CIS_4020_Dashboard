@@ -334,7 +334,6 @@ best_antibiotics <- function(bacteria, species){
   }
   text_return
 }
-cat(best_antibiotics("E COLI", "Canine"))
 
 #########################################
 ## SHINY UI ############################
